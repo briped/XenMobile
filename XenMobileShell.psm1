@@ -1,13 +1,17 @@
 ﻿#
-# Version: 1.2.4
+# Version: 2.0.0-beta
 # Revision 2016.10.19: improved the new-xmenrollment function: added parameters of notification templates as well as all other options. Also included error checking to provide a more useful error message in case incorrect information is provided to the function. 
 # Revision 2016.10.21: adjusted the confirmation on new-xmenrollment to ensure "YesToAll" actually works when pipelining. Corrected typo in notifyNow parameter name.
 # Revision 1.1.4 2016.11.24: corrected example in new-xmenrollment
-# Revision 1.2.0 2016.11.25: added the use of a PScredential object with the new-xmsession command.   
+# Revision 1.2.0 2016.11.25: added the use of a PScredential object with the New-Session command.   
 # Revision 1.2.1 2022-02-20: Code beautification and consistency.
-# Revision 1.2.2 2022-02-21: Modified New-XMSession with static timeout parameters. This is a quick fix/workaround for making it work when the account used is RBAC limited, and not able to read server properties.
-# Revision 1.2.3 2022-02-21: Added Revoke-XMEnrollment, Remove-XMEnrollment, Switch-XMDeviceAppLock, Get-XMApp
-# Revision 1.2.4 2022-10-21: More code beautification and consistency.
+# Revision 1.3.0 2022-02-21: Modified New-Session with static timeout parameters. This is a quick fix/workaround for making it work when the account used is RBAC limited, and not able to read server properties.
+# Revision 1.4.0 2022-02-21: Added Revoke-XMEnrollment, Remove-XMEnrollment, Switch-XMDeviceAppLock, Get-XMApp
+# Revision 1.4.1 2022-10-21: More code beautification and consistency.
+# Revision 2.0.0-beta 2022-11-11: 
+#   * Switching to follow Semantic Versioning.
+#   * Change to use a PowerShell Module Manifest and CommandPrefix. Rewriting all function names and more as part of this.
+#   * More code beautification and consistency.
 
 
 
@@ -22,7 +26,7 @@ $Request = [PSCustomObject]@{
 
 
 # Supporting functions. These functions are called by other functions in the module.
-function Invoke-XMRequest { #TODO HELP
+function Invoke-Request { #TODO HELP
     <#
     .SYNOPSIS
     Short description
@@ -55,7 +59,7 @@ function Invoke-XMRequest { #TODO HELP
     }
 }
 
-function Find-XMObject { #TODO HELP
+function Find-Object { #TODO HELP
     <#
     .SYNOPSIS
     Used to submit a search request to the server and return the results.
@@ -85,14 +89,14 @@ function Find-XMObject { #TODO HELP
     #>
     param(
         [Parameter(Mandatory = $false)]
-        $Criteria = $null,
-
+        $Criteria = $null
+        ,
         [Parameter(Mandatory = $true)]
-        $Entity,
-
+        $Entity
+        ,
         [Parameter(Mandatory = $false)]
-        $FilterIds = '[]',
-
+        $FilterIds = '[]'
+        ,
         [Parameter(Mandatory = $false)]
         $ResultSetSize = 999
     )
@@ -116,11 +120,11 @@ function Find-XMObject { #TODO HELP
         }
     }
     end {
-        return Invoke-XMRequest -Request $Request
+        return Invoke-Request -Request $Request
     }
 }
 
-function Remove-XMObject { #TODO HELP
+function Remove-Object { #TODO HELP
     <#
     .SYNOPSIS
     Used to submit REST DELETE requests.
@@ -145,8 +149,8 @@ function Remove-XMObject { #TODO HELP
     #>
     param(
         [Parameter(Mandatory = $true)]
-        $Entity,
-
+        $Entity
+        ,
         [Parameter(Mandatory = $false)]
         [string]$Target
     )
@@ -162,11 +166,11 @@ function Remove-XMObject { #TODO HELP
         $Request.Body = $Target
     }
     end {
-        return Invoke-XMRequest -Request $Request
+        return Invoke-Request -Request $Request
     }
 }
 
-function Submit-XMObject { #TODO HELP
+function Submit-Object { #TODO HELP
     <#
     .SYNOPSIS
     Used to submit REST POST requests.
@@ -188,8 +192,8 @@ function Submit-XMObject { #TODO HELP
     #>
     param(
         [Parameter(Mandatory = $true)]
-        $Entity,
-
+        $Entity
+        ,
         [Parameter(Mandatory = $true)]
         $Target
     )
@@ -206,11 +210,11 @@ function Submit-XMObject { #TODO HELP
         $Request.Body   = $Target
     }
     end {
-        return Invoke-XMRequest -Request $Request
+        return Invoke-Request -Request $Request
     }
 }
 
-function Set-XMObject { #TODO HELP
+function Set-Object { #TODO HELP
     <#
     .SYNOPSIS
     Used to submit REST PUT requests.
@@ -232,8 +236,8 @@ function Set-XMObject { #TODO HELP
     #>
     param(
         [Parameter(Mandatory = $true)]
-        $Entity,
-
+        $Entity
+        ,
         [Parameter(Mandatory = $true)]
         $Target
     )
@@ -250,11 +254,11 @@ function Set-XMObject { #TODO HELP
         $Request.Body   = $Target
     }
     end {
-        return Invoke-XMRequest -Request $Request
+        return Invoke-Request -Request $Request
     }
 }
 
-function Get-XMObject { #TODO HELP
+function Get-Object { #TODO HELP
     <#
     .SYNOPSIS
     Used to submit REST GET requests.
@@ -287,29 +291,30 @@ function Get-XMObject { #TODO HELP
         $Request.Body   = $null
     }
     end {
-        return Invoke-XMRequest -Request $Request
+        return Invoke-Request -Request $Request
     }
 }
 
 function checkSession { #TODO RENAME TO FOLLOW PS GUIDELINES
     #this functions checks the state of the session timeout. And will update in case the timeout type is inactivity. 
-    if ($XMSessionExpiry -gt (Get-Date)) {
+    if ($XMSSessionExpiry -gt (Get-Date)) {
         Write-Verbose -Message "Session is still active."
         #if we are using an inactivity timer (rather than static timeout), update the expiry time.
-        if ($XMSessionUseInactivity -eq $true) {
-            $TimeToExpiry = (($XMSessionInactivityTimer) * 60) - 30
-            Set-Variable -Name 'XMSessionExpiry' -Value (Get-Date).AddSeconds($TimeToExpiry) -Scope global
-            Write-Verbose -Message 'Session expiry extended by ' + $TimeToExpiry + ' sec. New expiry time is: ' + $XMSessionExpiry
+        if ($XMSSessionUseInactivity -eq $true) {
+            $TimeToExpiry = (($XMSSessionInactivityTimer) * 60) - 30
+            $Global:XMSSessionExpiry = (Get-Date).AddSeconds($TimeToExpiry)
+            #Set-Variable -Name 'XMSSessionExpiry' -Value (Get-Date).AddSeconds($TimeToExpiry) -Scope Global
+            Write-Verbose -Message 'Session expiry extended by ' + $TimeToExpiry + ' sec. New expiry time is: ' + $XMSSessionExpiry
         }
     }
     else {
-        Write-Host 'Session has expired. Please create a new XMSession using the New-XMSession command.' -ForegroundColor Yellow
+        Write-Host 'Session has expired. Please create a new Session using the New-Session command.' -ForegroundColor Yellow
         break 
     }
 }
 
 # Main functions.
-function New-XMCredential { #TODO
+function New-Credential { #TODO
     <#
     .SYNOPSIS
     Create a PSCredential for XenMobile login
@@ -328,8 +333,8 @@ function New-XMCredential { #TODO
         # Parameter help description
         [Parameter(Mandatory = $false)]
         [string]
-        $Username = "$($env:USERNAME)@citrix.com",
-
+        $Username = "$($env:USERNAME)@citrix.com"
+        ,
         # Parameter help description
         [Parameter(Mandatory = $false)]
         [string]
@@ -357,7 +362,7 @@ function New-XMCredential { #TODO
     }
 }
 
-function Get-XMCredential { #TODO
+function Get-Credential { #TODO
     <#
     .SYNOPSIS
     Short description
@@ -376,8 +381,8 @@ function Get-XMCredential { #TODO
         # Parameter help description
         [Parameter(Mandatory = $false)]
         [string]
-        $Username = "$($env:USERNAME)@citrix.com",
-
+        $Username = "$($env:USERNAME)@citrix.com"
+        ,
         # Parameter help description
         [Parameter(Mandatory = $false)]
         [string]
@@ -404,7 +409,7 @@ function Get-XMCredential { #TODO
 	return $Password
 }
 
-function Export-XMCredential { #TODO
+function Export-Credential { #TODO
     <#
     .SYNOPSIS
     Short description
@@ -421,8 +426,8 @@ function Export-XMCredential { #TODO
 	param(
         [Parameter(Mandatory = $false)]
 		[pscredential]
-        $Credential = (Get-Credential),
-
+        $Credential = (Get-Credential)
+        ,
         [Parameter(Mandatory = $false)]
 		[string]
         $Path = "credentials.enc.xml"
@@ -442,7 +447,7 @@ function Export-XMCredential { #TODO
 	$Export = "" | Select-Object Username, EncryptedPassword
 
 	# Give object a type name which can be identified later
-	$Export.PSObject.TypeNames.Insert(0,’ExportedPSCredential’)
+	$Export.PSObject.TypeNames.Insert(0, ’ExportedPSCredential’)
 	$Export.Username = $Credential.Username
 
 	# Encrypt SecureString password using Data Protection API
@@ -457,7 +462,7 @@ function Export-XMCredential { #TODO
 	Get-Item $Path
 }
 
-function Import-XMCredential { #TODO
+function Import-Credential { #TODO
     <#
     .SYNOPSIS
     Short description
@@ -472,7 +477,8 @@ function Import-XMCredential { #TODO
     General notes
     #>
 	param(
-		[string]$Path = "credentials.enc.xml"
+		[string]
+        $Path = "credentials.enc.xml"
 	)
 
 	# Import credential file
@@ -492,7 +498,7 @@ function Import-XMCredential { #TODO
 	Write-Output $Credential
 }
 
-function New-XMSession { #TODO stuff
+function New-Session { #TODO stuff
 <#
 .SYNOPSIS
 Starts a XMS session. Run this before running any other commands. 
@@ -529,147 +535,157 @@ If specified, this value, along with the -TimeoutType value, is used instead of 
 Must be set to the same value as the Server Property associated with the timeout type; ie. "xms.publicapi.static.timeout" if STATIC_TIMEOUT and "xms.publicapi.inactivity.timeout" if INACTIVITY_TIMEOUT. 
 
 .EXAMPLE
-New-XMSession -User "admin" -Password "password" -Server "mdm.citrix.com"
+New-Session -User "admin" -Password "password" -Server "mdm.citrix.com"
 
 .EXAMPLE
-New-XMSession -User "admin" -Password "password" -Server "mdm.citrix.com" -Port "4443"
+New-Session -User "admin" -Password "password" -Server "mdm.citrix.com" -Port "4443"
 
 .EXAMPLE
 $Credential = Get-Credential
-New-XMSession -Credential $Credential -Server mdm.citrix.com
+New-Session -Credential $Credential -Server mdm.citrix.com
 
 .EXAMPLE
-New-XMSession -Credential (Get-Credential) -Server mdm.citrix.com
+New-Session -Credential (Get-Credential) -Server mdm.citrix.com
 
 #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $false, 
-            ValueFromPipelineByPropertyName = $true, 
-            ValueFromPipeLine = $true)]
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipelineByPropertyName = $true
+                  ,ValueFromPipeLine = $true)]
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]
+        $Credential = [System.Management.Automation.PSCredential]::Empty
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipelineByPropertyName = $true
+                  ,ValueFromPipeLine = $true)]
         [string]
-        $User,
-
-        [Parameter(Mandatory = $false, 
-            ValueFromPipelineByPropertyName = $true,
-            ValueFromPipeLine = $true)]
+        $Server
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLIneByPropertyName = $true)]
+        [int]
+        $Port = 4443
+        ,
+        [Parameter(Mandatory = $false
+                  ,ParameterSetName = 'Timeout')]
+        [Parameter(Mandatory = $false
+                  ,ParameterSetName = 'UserPass')]
+        [Parameter(Mandatory = $false
+                  ,ParameterSetName = 'Credential')]
+        [ValidateSet('STATIC_TIMEOUT'
+                    ,'INACTIVITY_TIMEOUT')]
         [string]
-        $Password,
-
-        [Parameter(Mandatory = $false, 
-            ValueFromPipelineByPropertyName = $true, 
-            ValueFromPipeLine = $true)]
-        $Credential = $null,
-
-        [Parameter(Mandatory = $false, 
-            ValueFromPipelineByPropertyName = $true, 
-            ValueFromPipeLine = $true)]
-        [string]
-        $Server,
-
-        [Parameter(Mandatory = $false, 
-            ValueFromPipeLIneByPropertyName = $true)]
-        [string]
-        $Port = '4443',
-
-        [Parameter(Mandatory = $false, 
-            ParameterSetName = 'Timeout')]
-        [ValidateSet('STATIC_TIMEOUT',
-            'INACTIVITY_TIMEOUT')]
-        [string]
-        $TimeoutType,
-
-        [Parameter(Mandatory = $true, 
-            ParameterSetName = 'Timeout')]
+        $TimeoutType
+        ,
+        [Parameter(Mandatory = $true
+                  ,ParameterSetName = 'Timeout')]
         [int]
         $Timeout
     )
-    begin {}
+    begin {
+        if (!$Credential) {
+            throw 'No credentials were supplied.'
+        }
+    }
     process {
-        Set-Variable -Name 'XMSServer' -Value $Server -Scope global
+        $Global:XMSServer = $Server
+        #Set-Variable -Name 'XMSServer' -Value $Server -Scope Global
 
         Write-Verbose -Message 'Setting the server port.'
-        Set-Variable -Name 'XMSServerPort' -Value '4443' -Scope global
-        if ($Port.Length -gt 0 -and $Port -ne '4443') {
-            Set-Variable -Name 'XMSServerPort' -Value $Port -Scope global
+        $Global:XMSServerPort = 4443
+        #Set-Variable -Name 'XMSServerPort' -Value 4443 -Scope Global
+        if ($Port -ne 4443) {
+            $Global:XMSServerPort = $Port
+            #Set-Variable -Name 'XMSServerPort' -Value $Port -Scope Global
         }
-        Set-Variable -Name 'XMSServerBaseUrl' -Value "http://$($XMSServer):$($XMSServerPort)" -Scope global
-        Set-Variable -Name 'XMSServerApiPath' -Value '/xenmobile/api/v1' -Scope global
-        Set-Variable -Name 'XMSServerApiUrl'  -Value "$($XMSServerBaseUrl)$($XMSServerApiPath)" -Scope global
+        $Global:XMSServerBaseUrl = "http://$($XMSServer):$($XMSServerPort)"
+        #Set-Variable -Name 'XMSServerBaseUrl' -Value "http://$($XMSServer):$($XMSServerPort)" -Scope Global
+        $Global:XMSServerApiPath = '/xenmobile/api/v1'
+        #Set-Variable -Name 'XMSServerApiPath' -Value '/xenmobile/api/v1' -Scope Global
+        $Global:XMSServerApiUrl = "$($XMSServerBaseUrl)$($XMSServerApiPath)"
+        #Set-Variable -Name 'XMSServerApiUrl'  -Value "$($XMSServerBaseUrl)$($XMSServerApiPath)" -Scope Global
 
         Write-Verbose -Message 'Creating an authentication token, and setting the XMSAuthToken and XMSServer variables'
-        #if a credential object is used, convert the secure password to a clear text string to submit to the server. 
-        if ($null -ne $Credential) {
-            $User = $Credential.username
-            $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Credential.password)
-            $Password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-        }
         try {
-            #Set-Variable -Name 'XMSAuthToken' -Value (Get-XMAuthToken -User $User -Password $Password -Server $Server -Port $XMSServerPort) -Scope global -ErrorAction Stop
-            Set-Variable -Name 'XMSAuthToken' -Value (Get-XMAuthToken -Credential $Credential -Api $XMSServerApiUrl) -Scope global -ErrorAction Stop
+            $Global:XMSAuthToken = (Get-AuthToken -Credential $Credential -Api $XMSServerApiUrl)
+            #Set-Variable -Name 'XMSAuthToken' -Value (Get-AuthToken -Credential $Credential -Api $XMSServerApiUrl) -Scope Global -ErrorAction Stop
         }
         catch {
             Write-host 'Authentication failed.' -ForegroundColor Yellow
             break
         }
-        #clear the password variable, to reduce chance of compromise
-        #$Password = $null
-        Clear-Variable -Name 'Password'
-        #create variables to establish the session timeout. 
-        Set-Variable -Name 'XMSessionStart' -Value (Get-Date) -Scope global
-        Write-Verbose -Message "Setting session start to: $($XMSessionStart)"
+        #create variables to establish the session timeout.
+        $Global:XMSSessionStart = Get-Date
+        #Set-Variable -Name 'XMSSessionStart' -Value (Get-Date) -Scope Global
+        Write-Verbose -Message "Setting session start to: $($XMSSessionStart)"
         #check if the timeout type is set to inactivity or static and set the global value accordingly. 
         #if a static timeout is used, the session expiry can be set based on the static timeout. 
         if (!$TimeoutType) {
             Write-Verbose -Message "TimeoutType isn't defined. Will attempt to read timeout from server properties."
             Write-Verbose -Message 'Checking the type of timeout the server uses:'
-            if ((Get-XMServerProperty -Name 'xms.publicapi.timeout.type' -SkipCheck $true).Value -eq 'INACTIVITY_TIMEOUT') {
+            $XMSTimeoutType = Get-ServerProperty -Name 'xms.publicapi.timeout.type' -SkipCheck
+            $XMSInactivityTimeout = Get-ServerProperty -Name 'xms.publicapi.inactivity.timeout' -SkipCheck
+            if ($XMSTimeoutType.Value -eq 'INACTIVITY_TIMEOUT') {
                 Write-Verbose -Message 'Server is using an inactivity timeout for the API session. This is preferred.'
-                Set-Variable -Name 'XMSessionUseInactivity' -Value $true -Scope global
-                Set-Variable -Name 'XMSessionInactivityTimer' -Value ([System.Convert]::ToInt32((Get-XMServerProperty -Name 'xms.publicapi.inactivity.timeout' -SkipCheck $true).Value)) -Scope global
+                $Global:XMSSessionUseInactivity = $true
+                #Set-Variable -Name 'XMSSessionUseInactivity' -Value $true -Scope Global
+                $Global:XMSSessionInactivityTimer = [System.Convert]::ToInt32($XMSInactivityTimeout.Value)
+                #Set-Variable -Name 'XMSSessionInactivityTimer' -Value ([System.Convert]::ToInt32($XMSInactivityTimeout.Value)) -Scope Global
                 #due to network conditions and other issues, the actual timeout of the server may be quicker than here. So, we will reduce the timeout by 30 seconds.
-                $TimeToExpiry = (($XMSessionInactivityTimer) * 60) - 30 
-                Set-Variable -Name 'XMSessionExpiry' -Value (Get-Date).AddSeconds($TimeToExpiry) -Scope global
-                Write-Verbose -Message "The session expiry time is set to: $($XMSessionExpiry)"
+                $TimeToExpiry = (($XMSSessionInactivityTimer) * 60) - 30
+                $Global:XMSSessionExpiry = (Get-Date).AddSeconds($TimeToExpiry)
+                #Set-Variable -Name 'XMSSessionExpiry' -Value (Get-Date).AddSeconds($TimeToExpiry) -Scope Global
+                Write-Verbose -Message "The session expiry time is set to: $($XMSSessionExpiry)"
             }
             else {
+                $XMSStaticTimeout = Get-ServerProperty -Name 'xms.publicapi.static.timeout' -SkipCheck
                 Write-Verbose 'Server is using a static timeout. The use of an inactivity timeout is recommended.'
-                Set-Variable -Name 'XMSessionUseInactivity' -Value $false -Scope global
+                $Global:XMSSessionUseInactivity = $false
+                #Set-Variable -Name 'XMSSessionUseInactivity' -Value $false -Scope Global
                 #get the static timeout and deduct 30 seconds. 
-                $TimeToExpiry = ([System.Convert]::ToInt32((Get-XMServerProperty -Name 'xms.publicapi.static.timeout' -SkipCheck $true).Value)) * 60 - 30
+                $TimeToExpiry = ([System.Convert]::ToInt32($XMSStaticTimeout.Value)) * 60 - 30
                 Write-Verbose -Message "Expiry in seconds: $($TimeToExpiry)"
-                Set-Variable -Name 'XMSessionExpiry' -Value (Get-Date).AddSeconds($TimeToExpiry) -Scope global
-                Write-Verbose -Message "The session expiry time is set to: $($XMSessionExpiry)"
+                $Global:XMSSessionExpiry = (Get-Date).AddSeconds($TimeToExpiry)
+                #Set-Variable -Name 'XMSSessionExpiry' -Value (Get-Date).AddSeconds($TimeToExpiry) -Scope Global
+                Write-Verbose -Message "The session expiry time is set to: $($XMSSessionExpiry)"
             }
         }
         else {
             Write-Verbose -Message "TimeoutType is defined: $($TimeoutType)"
-            If ($TimeoutType -eq "INACTIVITY_TIMEOUT") {
+            if ($TimeoutType -eq "INACTIVITY_TIMEOUT") {
                 Write-Verbose "   Server is using an inactivity timeout for the API session. This is preferred."
-                Set-Variable -Name "XMSessionUseInactivity" -Value $true -Scope Global
-                Set-Variable -Name "XMSessionInactivityTimer" -Value $Timeout -Scope Global
+                $Global:XMSSessionUseInactivity = $true
+                #Set-Variable -Name "XMSSessionUseInactivity" -Value $true -Scope Global
+                $Global:XMSSessionInactivityTimer = $Timeout
+                #Set-Variable -Name "XMSSessionInactivityTimer" -Value $Timeout -Scope Global
                 #due to network conditions and other issues, the actual timeout of the server may be quicker than here. So, we will reduce the timeout by 30 seconds.
-                $TimeToExpiry = (($XMSessionInactivityTimer) * 60) - 30
-                Set-Variable -Name "XMSessionExpiry" -Value (get-Date).AddSeconds($TimeToExpiry) -Scope Global
-                Write-verbose "The session expiry time is set to: $($XMSessionExpiry)"
+                $TimeToExpiry = (($XMSSessionInactivityTimer) * 60) - 30
+                $Global:XMSSessionExpiry = (Get-Date).AddSeconds($TimeToExpiry)
+                #Set-Variable -Name "XMSSessionExpiry" -Value (Get-Date).AddSeconds($TimeToExpiry) -Scope Global
+                Write-verbose "The session expiry time is set to: $($XMSSessionExpiry)"
             }
-            Else {
+            else {
                 Write-Verbose "   Server is using a static timeout. The use of an inactivity timeout is recommended."
-                Set-Variable -Name "XMSessionUseInactivity" -Value $false -Scope Global
+                $Global:XMSSessionUseInactivity = $false
+                #Set-Variable -Name "XMSSessionUseInactivity" -Value $false -Scope Global
                 #get the static timeout and deduct 30 seconds. 
                 $TimeToExpiry = $Timeout * 60 - 30
                 Write-Verbose "Expiry in seconds: $($TimeToExpiry)"
-                Set-Variable -Name "XMSessionExpiry" -Value (Get-Date).AddSeconds($TimeToExpiry) -Scope Global
-                Write-Verbose "The session expiry time is set to: $($XMSessionExpiry)"
+                $Global:XMSSessionExpiry = (Get-Date).AddSeconds($TimeToExpiry)
+                #Set-Variable -Name "XMSSessionExpiry" -Value (Get-Date).AddSeconds($TimeToExpiry) -Scope Global
+                Write-Verbose "The session expiry time is set to: $($XMSSessionExpiry)"
             }
         }
         Write-Verbose -Message 'A session has been started.'
-        Write-Host "Authentication successfull. Token: $($XMSAuthToken)`nSession will expire at: $($XMSessionExpiry)" -ForegroundColor Yellow
+        Write-Host "Authentication successfull. Token: $($XMSAuthToken)`nSession will expire at: $($XMSSessionExpiry)" -ForegroundColor Yellow
     }
     end {}
 }
 
-function Get-XMAuthToken { # TODO stuff
+function Get-AuthToken { # TODO stuff
 <#
 .SYNOPSIS
 This function will authenticate against the server and will provide you with an authentication token.
@@ -698,47 +714,39 @@ Specify the servername. IP addresses cannot be used. Do no specify a port number
 Specify the port to connect to. This defaults to 4443. Only specify this parameter is you are using a non-standard port. 
 
 .EXAMPLE
-$Token = Get-XMAuthToken -User "admin" -Password "citrix123" -Server "mdm.citrix.com
+$Token = Get-AuthToken -User "admin" -Password "citrix123" -Server "mdm.citrix.com
 
 .EXAMPLE
-$Token = Get-XMAuthToken -Api "https://mdm.citrix.com:4443/xenmobile/api/v1" -Credential $StoredPSCredential
+$Token = Get-AuthToken -Api "https://mdm.citrix.com:4443/xenmobile/api/v1" -Credential $StoredPSCredential
 
 #> 
     param(
-        [Parameter(Mandatory = $false, 
-            ValueFromPipelineByPropertyName = $true, 
-            ValueFromPipeLine = $true)]
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipelineByPropertyName = $true
+                  ,ValueFromPipeLine = $true)]
         [string]
-        $Api,
-
-        [Parameter(Mandatory = $false, 
-            ValueFromPipelineByPropertyName = $true, 
-            ValueFromPipeLine = $true)]
-        $Credential = $null,
-
-        [Parameter(Mandatory = $false, 
-            ValueFromPipelineByPropertyName = $true, 
-            ValueFromPipeLine = $true)]
+        $Api
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipelineByPropertyName = $true
+                  ,ValueFromPipeLine = $true)]
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]
+        $Credential = [System.Management.Automation.PSCredential]::Empty
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipelineByPropertyName = $true
+                  ,ValueFromPipeLine = $true)]
         [string]
-        $User,
-
-        [Parameter(ValueFromPipelineByPropertyName, 
-            ValueFromPipeLine)]
-        [string]$Password,
-
-        [Parameter(Mandatory = $false,
-            ValueFromPipelineByPropertyName = $true, 
-            ValueFromPipeLine = $true)]
-        [string]
-        $Server,
-
-        [Parameter(Mandatory = $false, 
-            ValueFromPipeLIneByPropertyName = $true)]
-        [string]
-        $Port = '4443'
+        $Server
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLIneByPropertyName = $true)]
+        [int]
+        $Port = 4443
     )
     $Entity = '/authentication/login'
-    #$URL    = "https://$($Server):$($Port)/xenmobile/api/v1/authentication/login"
     $URL    = "$($Api)$($Entity)"
 
     #if a credential object is used, convert the secure password to a clear text string to submit to the server. 
@@ -761,7 +769,7 @@ $Token = Get-XMAuthToken -Api "https://mdm.citrix.com:4443/xenmobile/api/v1" -Cr
 }
 
 # Enrollment functions
-function New-XMEnrollment {
+function New-Enrollment {
 <#
 .SYNOPSIS
 This command will create an enrollment for the specified user.
@@ -831,76 +839,101 @@ Specify if you want to send notifications to the user. Value is either "true" or
 New-XMEnrollment -User "ward@citrix.com" -OS "iOS" -Ownership "BYOD" -Mode "invitation_url"
 
 .EXAMPLE
-Import-Csv -Path users.csv | New-XMEnrollment -OS iOS -Ownership BYOD
+Import-Csv -Path users.csv | New-Enrollment -OS iOS -Ownership BYOD
 
 This will read a CSV file and create an enrolment for each of the entries.
 
 #>
-    [CmdletBinding(SupportsShouldProcess = $true, 
-        ConfirmImpact = 'High')]
+    [CmdletBinding(SupportsShouldProcess = $true
+                  ,ConfirmImpact = 'High')]
     param(
-        [Parameter(ValueFromPipeLineByPropertyName, 
-            ValueFromPipeLine, 
-            Mandatory = $true)]
-        [string]$User,
-
-        [Parameter(ValueFromPipeLineByPropertyName, 
-            ValueFromPipeLine, 
-            Mandatory = $true)]
-        [ValidateSet('iOS', 
-            'SHTP')]
-        [string]$OS,
-
-        [Parameter(valueFromPipelineByPropertyName)]
-        $PhoneNumber = $null,
-
-        [parameter(valueFromPipelineByPropertyName)]
-        $Carrier = $null,
-
-        [Parameter(valueFromPipelineByPropertyName)]
-        [ValidateSet('SERIALNUMBER', 
-            'UDID', 
-            'IMEI')]
+        [Parameter(Mandatory = $true
+                  ,ValueFromPipeLineByPropertyName = $true
+                  ,ValueFromPipeLine = $true)]
+        [string]
+        $User
+        ,
+        [Parameter(Mandatory = $true
+                  ,ValueFromPipeLineByPropertyName = $true
+                  ,ValueFromPipeLine = $true)]
+        [ValidateSet('iOS'
+                    ,'SHTP')]
+        [string]
+        $OS
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true)]
+        [string]
+        $PhoneNumber
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true)]
+        [string]
+        $Carrier
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true)]
+        [ValidateSet('SERIALNUMBER'
+                    ,'UDID'
+                    ,'IMEI')]
+        [string]
         $DeviceBindingType = 'SERIALNUMBER',
 
-        [Parameter(valueFromPipelineByPropertyName)]
-        $DeviceBindingData = $null,
-
-        [Parameter(ValueFromPipeLineByPropertyName, 
-            ValueFromPipeLine)]
-        [ValidateSet('CORPORATE', 
-            'BYOD', 
-            'NO_BINDING')]
-        [string]$Ownership = 'NO_BINDING',
-
-        [Parameter(valueFromPipeLineByPropertyName)]
-        [ValidateSet('classic', 
-            'high_security', 
-            'invitation', 
-            'invitation_pin', 
-            'invitation_pwd', 
-            'username_pin', 
-            'two_factor')]
-        $Mode = 'classic',
-
-        [Parameter(ValueFromPipeLineByPropertyName)]
-        $AgentTemplate = $null,
-
-        [Parameter(ValueFromPipeLineByPropertyName)]
-        $InvitationTemplate = $null,
-
-        [Parameter(ValueFromPipeLineByPropertyName)]
-        $PinTemplate = $null,
-
-        [Parameter(ValueFromPipeLineByPropertyName)]
-        $ConfirmationTemplate = $null,
-
-        [Parameter(ValueFromPipeLineByPropertyName)]
-        [ValidateSet('true', 
-            'false')]
-        $NotifyNow = 'false',
-
-        [switch]$Force
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true)]
+        $DeviceBindingData
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true
+                  ,ValueFromPipeline = $true)]
+        [ValidateSet('CORPORATE'
+                    ,'BYOD'
+                    ,'NO_BINDING')]
+        [string]
+        $Ownership = 'NO_BINDING'
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true)]
+        [ValidateSet('classic'
+                    ,'high_security'
+                    ,'invitation'
+                    ,'invitation_pin'
+                    ,'invitation_pwd'
+                    ,'username_pin'
+                    ,'two_factor')]
+        [string]
+        $Mode = 'classic'
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true)]
+        [string]
+        $AgentTemplate
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true)]
+        [string]
+        $InvitationTemplate
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true)]
+        [string]
+        $PinTemplate
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true)]
+        [string]
+        $ConfirmationTemplate
+        ,
+        [Parameter(Mandatory = $false
+                  ,ValueFromPipeLineByPropertyName = $true)]
+        [ValidateSet('true'
+                    ,'false')]
+        [string]
+        $NotifyNow = 'false'
+        ,
+        [Parameter(Mandatory = $false)]
+        [switch]
+        $Force
     )
     begin {
         #check session state
@@ -972,7 +1005,7 @@ This will read a CSV file and create an enrolment for each of the entries.
     end {}
 }
 
-function Get-XMEnrollment { # TODO
+function Get-Enrollment { # TODO
     <#
     .SYNOPSIS
     Searches for enrollment invitations. 
@@ -1035,7 +1068,7 @@ function Get-XMEnrollment { # TODO
     end {}
 }
     
-function Revoke-XMEnrollment { # TODO
+function Revoke-Enrollment { # TODO
     <#
     .SYNOPSIS
     Revoke Enrollment Token
@@ -1072,7 +1105,7 @@ function Revoke-XMEnrollment { # TODO
     end {}
 }
 
-function Remove-XMEnrollment { # TODO
+function Remove-Enrollment { # TODO
     <#
     .SYNOPSIS
     Remove Enrollment Token
@@ -1110,7 +1143,7 @@ function Remove-XMEnrollment { # TODO
 }
 
 # Devices functions
-function Get-XMDevice { # TODO
+function Get-Device { # TODO
     <#
     .SYNOPSIS
     Basic search function to find devices
@@ -1177,7 +1210,7 @@ function Get-XMDevice { # TODO
     end {}
 }
 
-function Remove-XMDevice {
+function Remove-Device {
     <#
     .SYNOPSIS
     Removes a device from the XMS server and database. 
@@ -1214,7 +1247,7 @@ function Remove-XMDevice {
     end {}
 }
 
-function Update-XMDevice {
+function Update-Device {
     <#
     .SYNOPSIS
     Sends a deploy command to the selected device. A deploy will trigger a device to check for updated policies. 
@@ -1249,7 +1282,7 @@ function Update-XMDevice {
     end {}
 }
 
-function Invoke-XMDeviceWipe {
+function Invoke-DeviceWipe {
     <#
     .SYNOPSIS
     Sends a device wipe command to the selected device.
@@ -1286,7 +1319,7 @@ function Invoke-XMDeviceWipe {
     end {}
 }
 
-function Invoke-XMDeviceSelectiveWipe {
+function Invoke-DeviceSelectiveWipe {
     <#
     .SYNOPSIS
     Sends a selective device wipe command to the selected device.
@@ -1323,7 +1356,7 @@ function Invoke-XMDeviceSelectiveWipe {
     end {}
 }
 
-function Get-XMDeviceDeliveryGroups {
+function Get-DeviceDeliveryGroups {
     <#
     .SYNOPSIS
     Displays the delivery groups for a given device specified by id.
@@ -1356,7 +1389,7 @@ function Get-XMDeviceDeliveryGroups {
     end {}
 }
 
-function Get-XMDeviceActions {
+function Get-DeviceActions {
     <#
     .SYNOPSIS
     Displays the smart actions applied to a given device specified by id.
@@ -1389,7 +1422,7 @@ function Get-XMDeviceActions {
     end {}
 }
 
-function Get-XMDeviceApps { 
+function Get-DeviceApps { 
     <#
     .SYNOPSIS
     Displays all XenMobile store apps installed on a device, whether or ot the app was installed from the XenMobile Store 
@@ -1424,7 +1457,7 @@ function Get-XMDeviceApps {
     end {}
 }
 
-function Get-XMDeviceManagedApps { 
+function Get-DeviceManagedApps { 
     <#
     .SYNOPSIS
     Displays the XMS managed apps for a given device specified by id. Managed Apps include those apps installed from the XenMobile Store.  
@@ -1458,7 +1491,7 @@ function Get-XMDeviceManagedApps {
     end {}
 }
 
-function Get-XMDeviceSoftwareInventory { 
+function Get-DeviceSoftwareInventory { 
     <#
     .SYNOPSIS
     Displays the application inventory of a particular device.   
@@ -1490,7 +1523,7 @@ function Get-XMDeviceSoftwareInventory {
     end {}
 }
 
-function Get-XMDeviceInfo {
+function Get-DeviceInfo {
     <#
     .SYNOPSIS
     Displays the properties of a particular device.   
@@ -1523,7 +1556,7 @@ function Get-XMDeviceInfo {
     end {}
 }
 
-function Get-XMDevicePolicy {
+function Get-DevicePolicy {
 <#
 .SYNOPSIS
 Displays the policies applies to a particular device.   
@@ -1554,7 +1587,7 @@ Get-XMDevicePolicy -Id "8"
     }
 }
 
-function Get-XMDeviceProperty {
+function Get-DeviceProperty {
     <#
     .SYNOPSIS
     Gets the properties for the device. 
@@ -1589,7 +1622,7 @@ function Get-XMDeviceProperty {
     end {}
 }
 
-function Set-XMDeviceProperty {
+function Set-DeviceProperty {
     <#
     .SYNOPSIS
     adds, changes a properties for a device. 
@@ -1644,7 +1677,7 @@ function Set-XMDeviceProperty {
     end {}
 }
 
-function Remove-XMDeviceProperty { 
+function Remove-DeviceProperty { 
     <#
     .SYNOPSIS
     Deletes a properties for a device. 
@@ -1692,7 +1725,7 @@ function Remove-XMDeviceProperty {
     end {}
 }
 
-function Switch-XMDeviceAppLock {
+function Switch-DeviceAppLock {
     <#
     .SYNOPSIS
     Sends app lock/unlock command.
@@ -1730,7 +1763,7 @@ function Switch-XMDeviceAppLock {
 }
 
 # Application functions.
-function Get-XMApp { #TODO
+function Get-App { #TODO
     <#
     .SYNOPSIS
     Get Applications by Filter
@@ -1843,7 +1876,7 @@ function Get-XMApp { #TODO
     end {}
 }
 
-function Get-XMAppDetails { #TODO
+function Get-AppDetails { #TODO
     <#
     .SYNOPSIS
     NEEDS TEXT
@@ -1993,7 +2026,7 @@ function Get-XMAppDetails { #TODO
     end {}
 }
 
-function Update-XMPublicStoreApp { #TODO
+function Update-PublicStoreApp { #TODO
     <#
     .SYNOPSIS
 
@@ -2048,7 +2081,7 @@ function Update-XMPublicStoreApp { #TODO
         [switch]$CheckForUpdate
     )
     begin {
-        Get-XMSession
+        Get-Session
         $Method = 'PUT'
     }
     process {
@@ -2068,7 +2101,7 @@ function Update-XMPublicStoreApp { #TODO
 }
 
 # ServerProperty functions.
-function Get-XMServerProperty {
+function Get-ServerProperty {
     <#
     .SYNOPSIS
     Queries the server for server properties. 
@@ -2080,24 +2113,26 @@ function Get-XMServerProperty {
     Specify the parameter for which you want to get the values. The parameter name typically looks like xms.publicapi.static.timeout. 
 
     .EXAMPLE
-    Get-XMServerProperty  #returns all properties
+    Get-ServerProperty  #returns all properties
 
     .EXAMPLE
-    Get-XMServerProperty -Name "xms.publicapi.static.timeout"
+    Get-ServerProperty -Name "xms.publicapi.static.timeout"
 
     #>
     [CmdletBinding()]
     param(
         [Parameter(ValueFromPipeline)]
-        [string]$Name = $null,
-
-        [Parameter(dontshow)]
-        [bool]$SkipCheck = $false
+        [string]
+        $Name = $null
+        ,
+        [Parameter(DontShow)]
+        [switch]
+        $SkipCheck
     )
     begin {
-        #The Get-XMServerProperty function is called during the XMSession setup in order to specify the timeout values.
+        #The Get-ServerProperty function is called during the Session setup in order to specify the timeout values.
         #If you check the session during this time, the check will fail.
-        #Using the hidden skipcheck parameter, we can override the check during the initial xmsession setup.
+        #Using the hidden SkipCheck parameter, we can override the check during the initial session setup.
         if (!$SkipCheck) {
             Write-verbose -Message 'Checking the session state'
             #Check session state.
@@ -2108,7 +2143,7 @@ function Get-XMServerProperty {
         }
     }
     process {
-        Write-Verbose -Message 'Creating the Get-XMServerProperty request.'
+        Write-Verbose -Message 'Creating the Get-ServerProperty request.'
         $Request.Entity = ''
         $Request.Method    = 'POST'
         $Request.Uri       = "https://$($XMSServer):$($XMSServerPort)/xenmobile/api/v1/serverproperties/filter"
@@ -2123,14 +2158,14 @@ function Get-XMServerProperty {
             sortOrder      = 'desc';
             searchStr      = $Name;
         }
-        Write-Verbose -Message 'Submitting the Get-XMServerProperty request to the server.'
-        $Results = Invoke-XMRequest -Request $Request
+        Write-Verbose -Message 'Submitting the Get-ServerProperty request to the server.'
+        $Results = Invoke-Request -Request $Request
         return $Results.allEwProperties
     }
     end {}
 }
 
-function Set-XMServerProperty {
+function Set-ServerProperty {
     <#
     .SYNOPSIS
     Sets the server for server properties. 
@@ -2151,7 +2186,7 @@ function Set-XMServerProperty {
     Specify a new description. This parameter is optional. If not specified the existing description is used. 
 
     .EXAMPLE
-    Set-XMServerProperty -Name "xms.publicapi.static.timeout" -Value "45"
+    Set-ServerProperty -Name "xms.publicapi.static.timeout" -Value "45"
 
     #>
     [CmdletBinding(SupportsShouldProcess = $true, 
@@ -2179,10 +2214,10 @@ function Set-XMServerProperty {
         if ($PSCmdlet.ShouldProcess($Name)) {
             #if no displayname or description is provided, search for the existing values and use those. 
             if (!$DisplayName) {
-                $DisplayName = (Get-XMServerProperty -Name $Name).displayName
+                $DisplayName = (Get-ServerProperty -Name $Name).displayName
             }
             if (!$Description) {
-                $Description = (Get-XMServerProperty -Name $Name).description
+                $Description = (Get-ServerProperty -Name $Name).description
             }
             $Request.Method    = 'PUT'
             $Request.Url       = "https://$($XMSServer):$($XMSServerPort)/xenmobile/api/v1/serverproperties" 
@@ -2196,13 +2231,13 @@ function Set-XMServerProperty {
                 displayName    = $DisplayName;
                 description    = $Description;
             }
-            Invoke-XMRequest -Request $Request
+            Invoke-Request -Request $Request
         } 
     }
     end {}
 }
 
-function New-XMserverProperty {
+function New-ServerProperty {
     <#
     .SYNOPSIS
     Create a new server property.  
@@ -2223,7 +2258,7 @@ function New-XMserverProperty {
     Specify a the description. 
 
     .EXAMPLE
-    New-XMServerProperty -Name "xms.something.something" -Value "indeed" -DisplayName "something" -Description "a something property."
+    New-ServerProperty -Name "xms.something.something" -Value "indeed" -DisplayName "something" -Description "a something property."
 
     #>
     [CmdletBinding(SupportsShouldProcess = $true, 
@@ -2263,13 +2298,13 @@ function New-XMserverProperty {
                 displayName    = $DisplayName;
                 description    = $Description;
             }
-            Invoke-XMRequest -Request $Request
+            Invoke-Request -Request $Request
         }
     }
     end {}
 }
 
-function Remove-XMserverProperty {
+function Remove-ServerProperty {
     <#
     .SYNOPSIS
     Removes a server property. 
@@ -2281,7 +2316,7 @@ function Remove-XMserverProperty {
     Specify the name of the propery to remove. This parameter is mandatory. 
 
     .EXAMPLE
-    Remove-XMServerProperty -Name "xms.something.something"
+    Remove-ServerProperty -Name "xms.something.something"
 
     #>
     [CmdletBinding(SupportsShouldProcess = $true, 
@@ -2305,7 +2340,7 @@ function Remove-XMserverProperty {
 }
 
 # ClientProperty functions.
-function Get-XMClientProperty {
+function Get-ClientProperty {
     <#
     .SYNOPSIS
     Queries the server for client properties. 
@@ -2339,7 +2374,7 @@ function Get-XMClientProperty {
     end {}
 }
 
-function New-XMClientProperty {
+function New-ClientProperty {
     <#
     .SYNOPSIS
     Creates a new client property. 
@@ -2401,7 +2436,7 @@ function New-XMClientProperty {
     end {}
 }
 
-function Set-XMClientProperty {
+function Set-ClientProperty {
     <#
     .SYNOPSIS
     Edit a client property. 
@@ -2468,7 +2503,7 @@ function Set-XMClientProperty {
     end {}
 }
 
-function Remove-XMClientProperty {
+function Remove-ClientProperty {
     <#
     .SYNOPSIS
     Removes a client property. 
@@ -2502,34 +2537,3 @@ function Remove-XMClientProperty {
     }
     end {}
 }
-
-Export-ModuleMember -Function Get-XMApp
-Export-ModuleMember -Function Get-XMClientProperty
-Export-ModuleMember -Function Get-XMDevice
-Export-ModuleMember -Function Get-XMDeviceActions
-Export-ModuleMember -Function Get-XMDeviceApps
-Export-ModuleMember -Function Get-XMDeviceDeliveryGroups
-Export-ModuleMember -Function Get-XMDeviceInfo
-Export-ModuleMember -Function Get-XMDeviceManagedApps
-Export-ModuleMember -Function Get-XMDevicePolicy
-Export-ModuleMember -Function Get-XMDeviceProperty
-Export-ModuleMember -Function Get-XMDeviceSoftwareInventory
-Export-ModuleMember -Function Get-XMEnrollment
-Export-ModuleMember -Function Get-XMServerProperty
-Export-ModuleMember -Function Invoke-XMDeviceSelectiveWipe
-Export-ModuleMember -Function Invoke-XMDeviceWipe
-Export-ModuleMember -Function New-XMClientProperty
-Export-ModuleMember -Function New-XMEnrollment
-Export-ModuleMember -Function New-XMserverproperty
-Export-ModuleMember -Function New-XMSession
-Export-ModuleMember -Function Remove-XMClientProperty
-Export-ModuleMember -Function Remove-XMDevice
-Export-ModuleMember -Function Remove-XMDeviceProperty
-Export-ModuleMember -Function Remove-XMEnrollment
-Export-ModuleMember -Function Remove-XMServerProperty
-Export-ModuleMember -Function Revoke-XMEnrollment
-Export-ModuleMember -Function Set-XMClientProperty
-Export-ModuleMember -Function Set-XMDeviceProperty
-Export-ModuleMember -Function Set-XMServerProperty
-Export-ModuleMember -Function Switch-XMDeviceAppLock
-Export-ModuleMember -Function Update-XMDevice
