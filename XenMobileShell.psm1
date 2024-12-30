@@ -844,8 +844,7 @@ Import-Csv -Path users.csv | New-Enrollment -OS iOS -Ownership BYOD
 This will read a CSV file and create an enrolment for each of the entries.
 
 #>
-    [CmdletBinding(SupportsShouldProcess = $true
-                  ,ConfirmImpact = 'High')]
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true
                   ,ValueFromPipeLineByPropertyName = $true
@@ -1086,8 +1085,7 @@ function Revoke-Enrollment { # TODO
     NEEDS TEXT
 
     #>
-    [CmdletBinding(SupportsShouldProcess = $true, 
-        ConfirmImpact = 'High')]
+    [CmdletBinding()]
     param(
         [Parameter(ValueFromPipeLineByPropertyName, 
             ValueFromPipeLine, 
@@ -1123,8 +1121,7 @@ function Remove-Enrollment { # TODO
     NEEDS TEXT
 
     #>
-    [CmdletBinding(SupportsShouldProcess = $true, 
-        ConfirmImpact = 'High')]
+    [CmdletBinding()]
     param(
         [Parameter(ValueFromPipeLineByPropertyName, 
             ValueFromPipeLine, 
@@ -1799,8 +1796,7 @@ function Get-App { #TODO
     NEEDS TEXT
 
     #>
-    [CmdletBinding(SupportsShouldProcess = $true, 
-        ConfirmImpact = 'High')]
+    [CmdletBinding()]
     param(
         [Parameter(ValueFromPipeLineByPropertyName, 
             ValueFromPipeLine)]
@@ -1970,8 +1966,7 @@ function Get-AppDetails { #TODO
         "storeSettings": { "rate": true, "review": true } }, "avppParams": null, "avppTokenParams": null, "rules": null, "appType": "mobile_android", "uuid": "40c514dd-1a8a-4e48-96ed-512b658fb333", "id": 8, "vppAccount": -1, "iconPath": "iVBORw0KGgoAAAANSU...", "iconUrl": "https://lh3.ggpht.com/j6aNgkpGRXp9PEinADFoSkyfup46-6Rb83bS41lfQC_Tc2qg96zQ_aqZcyiaV3M-Ai4", "bundleId": "com.microsoft.office.word", "appId": null, "appKey": null, "storeUrl": "https://play.google.com/store/apps/details?id=com.microsoft.office.word", "b2B": false }, "windows": null, "android_work": null, "windows_phone": null }
     }
     #>
-    [CmdletBinding(SupportsShouldProcess = $true, 
-        ConfirmImpact = 'High')]
+    [CmdletBinding()]
     param(
         [ValidateSet('mdx', 
             'enterprise', 
