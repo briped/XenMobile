@@ -1,0 +1,4 @@
+# avppLicenseReleaser
+I needed to have all VPP app licenses released in order to remove the associated location in Apple Business Manager. GGing through hundreds of apps with thousands of associated licenses was not a task I wanted to do manually, and I was unable to find any documented API way to do it, so I made this.
+
+Most actions done through the Admin Web Console is actually just doing API calls, so looking at the calls that were being sent while doing the steps manually, let me create these functions. As for the authentication I just took the lazy way and logs in through the browser then simply copies the session ID from the browser session to my script.
